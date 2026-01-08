@@ -40,8 +40,6 @@ resource "aws_eks_addon" "pod_identity" {
   addon_version = "v1.3.0-eksbuild.1"
 }
 
-# --- 4. Managed Node Group (Bootstrap) ---
-# We need at least one node to run the Karpenter controller and CoreDNS.
 resource "aws_eks_node_group" "system_nodes" {
   cluster_name    = aws_eks_cluster.eks_cluster.name
   node_group_name = "system-nodes"

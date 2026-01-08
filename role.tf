@@ -16,8 +16,6 @@ resource "aws_iam_policy" "describe_ec2_policy" {
 EOF
 }
 
-# ###### K8s Service Role #########
-
 resource "aws_iam_role" "k8s_role" {
   name = "k8s_role_test"
 
@@ -47,8 +45,6 @@ resource "aws_iam_role_policy_attachment" "describe_ec2_attachment_k8s" {
   policy_arn = aws_iam_policy.describe_ec2_policy.arn
 }
 
-
-# --- 1. Karpenter Controller Role (IRSA) ---
 module "karpenter_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
@@ -75,7 +71,6 @@ module "karpenter_irsa" {
   }
 }
 
-# --- 2. Karpenter Node Role ---
 module "karpenter_node_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
   version = "~> 5.0"
@@ -94,8 +89,6 @@ module "karpenter_node_role" {
   trusted_role_services = ["ec2.amazonaws.com"]
 }
 
-# --- 3. Karpenter Instance Profile ---
-# Required for the EC2 instances to launch
 resource "aws_iam_instance_profile" "karpenter_node" {
   name = "karpenter-node-eks"
   role = module.karpenter_node_role.iam_role_name

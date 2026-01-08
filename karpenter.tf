@@ -22,7 +22,6 @@ resource "helm_release" "karpenter" {
     }
   ]
 
-  # Wait for the cluster to be ready
   depends_on = [module.karpenter_irsa]
 }
 
