@@ -82,3 +82,89 @@ To tear down all infrastructure:
 ```bash
 terraform destroy
 ```
+-----------
+
+
+# Innovate Inc. Cloud Infrastructure Architecture Design
+
+## 1. Executive Summary
+
+This document outlines the proposed cloud infrastructure for Innovate Inc.'s new web application. The solution prioritizes **scalability**, **security**, and **cost-effectiveness** by leveraging **Amazon Web Services (AWS)**. The core of the architecture is built around **Amazon EKS (Elastic Kubernetes Service)** for container orchestration and **Amazon RDS** for managed database services.
+
+## 2. Cloud Environment Structure
+
+**Provider Choice:** **AWS (Amazon Web Services)**.
+**Justification:** AWS is the market leader with the most mature ecosystem for managed Kubernetes (EKS) and database services. Given the anticipated rapid growth, AWS provides the widest range of services to scale (e.g., Karpenter for intelligent provision, Spot instances). It also aligns with the Terraform context established in related projects.
+
+### Organization & Account Strategy
+To ensure security, billing isolation, and ease of management, we recommend a multi-account strategy using **AWS Organizations**:
+
+1.  **Management Account**: For consolidated billing and high-level governance (SCP).
+2.  **Security/Log Archive Account**: Centralized CloudTrail logs and security auditing tools.
+3.  **Shared Services Account**: CI/CD runners, ECR (Container Registry), and central tooling.
+4.  **Workloads - Staging**: A mirror of production for testing. Use smaller instances/clusters to save costs.
+5.  **Workloads - Production**: The live environment with full redundancy and higher resource limits.
+
+## 3. Network Design
+
+### Virtual Private Cloud (VPC)
+We will design a standard 3-tier VPC architecture for maximum security and availability.
+
+*   **CIDR Block**: `/16` (e.g., 10.0.0.0/16) to allow ample IP space for node scaling.
+*   **Availability Zones (AZs)**: 3 AZs for High Availability (HA).
+
+### Subnet Strategy
+1.  **Public Subnets (Tier 1)**:
+    *   Resources: Application Load Balancers (ALB), NAT Gateways, Bastion Hosts (if needed).
+    *   Access: Direct Internet access via Internet Gateway (IGW).
+2.  **Private Subnets - App (Tier 2)**:
+    *   Resources: EKS Worker Nodes, operational pods.
+    *   Access: No direct internet ingress. Egress via NAT Gateway for pulling images/updates.
+3.  **Private Subnets - Data (Tier 3)**:
+    *   Resources: Amazon RDS instances, ElastiCache (if added later).
+    *   Access: Restricted strictly to traffic from Tier 2 subnets.
+
+### Network Security
+*   **Security Groups**: applied at the instance/ENI level (e.g., "Allow TCP 5432 only from App Security Group" for RDS).
+*   **NACLs (Network ACLs)**: Stateless packet filtering for subnet-level boundary protection.
+*   **WAF (Web Application Firewall)**: Attached to the ALB to protect against common web exploits (SQL injection, XSS).
+
+## 4. Compute Platform (Kubernetes)
+
+### Amazon EKS (Elastic Kubernetes Service)
+EKS handles the heavy lifting of the Kubernetes control plane.
+
+### Node Groups & Scaling
+1.  **Managed Node Groups (On-Demand)**:
+    *   Purpose: Run critical system pods (CoreDNS, VPC CNI, Metrics Server) and baseline application replicas.
+    *   Benefit: Stability and guaranteed availability.
+2.  **Karpenter (Auto-scaling)**:
+    *   Purpose: Rapidly provision nodes for application workloads.
+    *   Strategy: Use **Spot Instances** for stateless application pods to reduce compute costs by up to 90%. Karpenter will dynamically select the best instance types based on pending pod requirements.
+
+### Containerization & Deployment
+*   **Image Building**: Dockerfiles for Python/Flask (Backend) and React (Frontend). Frontend connects to Backend via internal service DNS or Ingress path routing.
+*   **Registry**: **Amazon ECR** (Elastic Container Registry) with lifecycle policies to clean up old tags.
+*   **CI/CD**: GitHub Actions or AWS CodePipeline.
+    1.  Code Commit -> Trigger Build.
+    2.  Build Docker Image -> Push to ECR with unique SHA tag.
+    3.  Update Helm Chart/Manifest -> Apply to EKS (Staging first, then Prod).
+
+## 5. Database Service
+
+### Amazon RDS for PostgreSQL
+**Recommendation**: **Managed Amazon RDS using the Aurora engine (PostgreSQL compatible)** or **Standard RDS** if cost is the primary constraint initially.
+**Justification**: Aurora offers superior performance and auto-scaling storage compared to standard RDS, which is ideal for "rapid growth to millions of users."
+
+### High Availability & Disaster Recovery (DR)
+*   **Multi-AZ Deployment**: Automatically provisions a synchronous standby replica in a different AZ. If the primary fails, RDS fails over automatically.
+*   **Backups**:
+    *   **Automated Backups**: Retention set to 7-35 days for Point-in-Time Recovery (PITR).
+    *   **Snapshots**: Manual snapshots before major schema changes.
+*   **Encryption**: storage encrypted at rest using KMS; SSL/TLS for data in transit.
+
+## 6. Diagram
+
+Please see `innovate_inc_diagram.png` for the High-Level Visual representation.
+
+![diagram](innovate_inc_diagram.png)
