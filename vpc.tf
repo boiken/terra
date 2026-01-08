@@ -1,13 +1,13 @@
 resource "aws_vpc" "vpc_frankfurt" {
   cidr_block = local.cidr_frankfurt
-  tags       = { Name = "VPC_frankfurt" }
+  tags       = { Name = "VPC_frankfurt_test" }
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc_frankfurt.id
 
   tags = {
-    Name = "frankfurt-igw"
+    Name = "frankfurt-igw-test"
   }
 }
 
@@ -20,7 +20,7 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-    Name = "frankfurt-public-rt"
+    Name = "frankfurt-public-rt-test"
   }
 }
 
@@ -29,7 +29,7 @@ resource "aws_subnet" "vpc_frankfurt_subnet1" {
   cidr_block              = local.cidr_frankfurt_subnet_1
   availability_zone       = "eu-central-1a"
   map_public_ip_on_launch = true
-  tags = { Name = "frankfurt-Subnet1 "
+  tags = { Name = "frankfurt-Subnet1-test"
     "karpenter.sh/discovery" = local.cluster_name
   "kubernetes.io/role/elb" = "1" }
 }
@@ -39,7 +39,7 @@ resource "aws_subnet" "vpc_frankfurt_subnet2" {
   availability_zone       = "eu-central-1b"
   cidr_block              = local.cidr_frankfurt_subnet_2
   map_public_ip_on_launch = true
-  tags = { Name = "frankfurt-Subnet2 "
+  tags = { Name = "frankfurt-Subnet2-test "
     "karpenter.sh/discovery" = local.cluster_name
   "kubernetes.io/role/elb" = "1" }
 }
@@ -49,7 +49,7 @@ resource "aws_subnet" "vpc_frankfurt_subnet3" {
   availability_zone       = "eu-central-1c"
   cidr_block              = local.cidr_frankfurt_subnet_3
   map_public_ip_on_launch = true
-  tags = { Name = "frankfurt-Subnet3 "
+  tags = { Name = "frankfurt-Subnet3-test "
     "karpenter.sh/discovery" = local.cluster_name
   "kubernetes.io/role/elb" = "1" }
 }

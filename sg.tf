@@ -18,7 +18,7 @@ resource "aws_security_group" "eks_api_sg" {
   }
 
   tags = {
-    Name                     = "eks_api_sg"
+    Name                     = "eks_api_sg_test"
     "karpenter.sh/discovery" = local.cluster_name
   }
 }

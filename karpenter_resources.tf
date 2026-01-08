@@ -57,7 +57,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
             {
               key      = "karpenter.k8s.aws/instance-category"
               operator = "In"
-              values   = ["c7g", "m7g", "r7g"]
+              values   = ["c7g", "m7g", "r7", "c", "r"]
             },
             {
               key      = "karpenter.k8s.aws/instance-generation"
@@ -67,7 +67,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
             {
               key      = "kubernetes.io/arch"
               operator = "In"
-              values   = ["arm64"]
+              values   = ["arm64", "x86_64"]
             },
             {
               key      = "karpenter.sh/capacity-type"

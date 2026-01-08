@@ -19,7 +19,7 @@ EOF
 # ###### K8s Service Role #########
 
 resource "aws_iam_role" "k8s_role" {
-  name = "k8s_role"
+  name = "k8s_role_test"
 
   assume_role_policy = <<EOF
 {
@@ -61,6 +61,12 @@ module "karpenter_irsa" {
 
   karpenter_sqs_queue_arn = aws_sqs_queue.karpenter_interruption.arn
 
+  role_policy_arns = {
+    custom = aws_iam_policy.karpenter_controller_policy_custom.arn
+  }
+
+  enable_karpenter_instance_profile_creation = true
+
   oidc_providers = {
     ex = {
       provider_arn               = aws_iam_openid_connect_provider.oidc.arn
@@ -93,4 +99,41 @@ module "karpenter_node_role" {
 resource "aws_iam_instance_profile" "karpenter_node" {
   name = "karpenter-node-eks"
   role = module.karpenter_node_role.iam_role_name
+}
+
+resource "aws_iam_policy" "karpenter_controller_policy_custom" {
+  name        = "KarpenterControllerPolicyCustom"
+  description = "Custom permissions for Karpenter controller"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "ec2:CreateLaunchTemplate",
+          "ec2:CreateFleet",
+          "ec2:RunInstances",
+          "ec2:CreateTags",
+          "ec2:TerminateInstances",
+          "ec2:DeleteLaunchTemplate",
+          "ec2:DescribeLaunchTemplates",
+          "ec2:DescribeInstances",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeInstanceTypes",
+          "ec2:DescribeInstanceTypeOfferings",
+          "ec2:DescribeAvailabilityZones",
+          "ssm:GetParameter",
+          "pricing:GetProducts"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action   = "iam:PassRole"
+        Effect   = "Allow"
+        Resource = module.karpenter_node_role.iam_role_arn
+      }
+    ]
+  })
 }
